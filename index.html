@@ -110,6 +110,7 @@
     position: fixed; top: 16px; left: 20px; z-index: 10;
   }
   #audio-btn:hover { color: #a89060; border-color: #5a4a30; }
+  #funeral-audio { display: none; }
 </style>
 </head>
 <body>
@@ -119,6 +120,10 @@
   <div class="corner bl"></div><div class="corner br"></div>
   <div class="music-note"><div class="music-pulse"></div>In Memoriam</div>
   <button id="audio-btn" onclick="toggleAudio()">♪ Sound</button>
+  <audio id="funeral-audio" loop>
+    <source src="https://upload.wikimedia.org/wikipedia/commons/2/twentyfive/Moonlight_Sonata_-_1st_movement.ogg" type="audio/ogg">
+    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+  </audio>
   <div class="particles" id="particles"></div>
 
   <div class="candle-row">
@@ -269,52 +274,16 @@ function makeParticles() {
 }
 
 function toggleAudio() {
+  const audio = document.getElementById('funeral-audio');
   if (!isPlaying) {
-    startDirge(); document.getElementById('audio-btn').textContent = '♪ Mute';
+    audio.volume = 0.4;
+    audio.play();
+    document.getElementById('audio-btn').textContent = '♪ Mute';
   } else {
-    stopDirge(); document.getElementById('audio-btn').textContent = '♪ Sound';
+    audio.pause();
+    document.getElementById('audio-btn').textContent = '♪ Sound';
   }
   isPlaying = !isPlaying;
-}
-
-function startDirge() {
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  gainNode = audioCtx.createGain();
-  gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-  gainNode.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 2);
-  gainNode.connect(audioCtx.destination);
-  const reverb = audioCtx.createConvolver();
-  const impulseLen = audioCtx.sampleRate * 3;
-  const impulse = audioCtx.createBuffer(2, impulseLen, audioCtx.sampleRate);
-  for (let ch = 0; ch < 2; ch++) {
-    const d = impulse.getChannelData(ch);
-    for (let i = 0; i < impulseLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i/impulseLen, 3);
-  }
-  reverb.buffer = impulse; reverb.connect(gainNode);
-  const notes = [196, 220, 246.94, 261.63, 220, 196, 174.61, 196];
-  let t = audioCtx.currentTime + 0.5;
-  function playLoop() {
-    notes.forEach((freq, i) => {
-      const osc = audioCtx.createOscillator();
-      const og = audioCtx.createGain();
-      osc.type = 'sine'; osc.frequency.value = freq;
-      og.gain.setValueAtTime(0, t + i * 1.4);
-      og.gain.linearRampToValueAtTime(0.12, t + i * 1.4 + 0.3);
-      og.gain.linearRampToValueAtTime(0, t + i * 1.4 + 1.2);
-      osc.connect(og); og.connect(reverb); og.connect(gainNode);
-      osc.start(t + i * 1.4); osc.stop(t + i * 1.4 + 1.4);
-    });
-    t += notes.length * 1.4;
-    if (isPlaying && t < audioCtx.currentTime + 120) setTimeout(playLoop, (notes.length * 1.4 - 2) * 1000);
-  }
-  playLoop();
-}
-
-function stopDirge() {
-  if (gainNode) {
-    gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1);
-    setTimeout(() => { try { audioCtx.close(); } catch(e){} }, 1500);
-  }
 }
 
 buildDots();
